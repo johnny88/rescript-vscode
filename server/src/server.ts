@@ -60,6 +60,7 @@ let sendUpdatedDiagnostics = () => {
         method: "textDocument/publishDiagnostics",
         params: params,
       };
+
       process.send!(notification);
 
       filesWithDiagnostics.add(file);
@@ -125,7 +126,6 @@ type clientSentBuildAction = {
 };
 let openedFile = (fileUri: string, fileContent: string) => {
   let filePath = fileURLToPath(fileUri);
-
   stupidFileContentCache.set(filePath, fileContent);
 
   let projectRootPath = utils.findProjectRootOfFile(filePath);
@@ -146,6 +146,7 @@ let openedFile = (fileUri: string, fileContent: string) => {
     // check if .bsb.lock is still there. If not, start a bsb -w ourselves
     // because otherwise the diagnostics info we'll display might be stale
     let bsbLockPath = path.join(projectRootPath, c.bsbLock);
+    console.log(fs.existsSync(bsbLockPath));
     if (firstOpenFileOfProject && !fs.existsSync(bsbLockPath)) {
       let bsbPath = path.join(projectRootPath, c.bsbNodePartialPath);
       // TODO: sometime stale .bsb.lock dangling. bsb -w knows .bsb.lock is
@@ -156,6 +157,7 @@ let openedFile = (fileUri: string, fileContent: string) => {
           title: c.startBuildAction,
           projectRootPath: projectRootPath,
         };
+        console.log(payload);
         let params = {
           type: p.MessageType.Info,
           message: `Start a build for this project to get the freshest data?`,

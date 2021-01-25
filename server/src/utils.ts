@@ -6,6 +6,7 @@ import * as path from "path";
 import * as t from "vscode-languageserver-types";
 import fs from "fs";
 import * as os from "os";
+import * as util from "util";
 
 let tempFilePrefix = "rescript_format_file_" + process.pid + "_";
 let tempFileId = 0;
@@ -105,8 +106,18 @@ export let runBsbWatcherUsingValidBsbPath = (
 	bsbPath: p.DocumentUri,
 	projectRootPath: p.DocumentUri
 ) => {
-	let process = childProcess.execFile(bsbPath, ["-w"], {
-		cwd: projectRootPath,
+	let process;
+	if (os.platform() === "win32") {
+		process = childProcess.exec(`${bsbPath}.cmd -w`, {
+			cwd: projectRootPath,
+		});
+	} else {
+		process = childProcess.execFile(bsbPath, ["-w"], {
+			cwd: projectRootPath,
+		});
+	}
+	process.on("error", (err: Error) => {
+		console.log(err);
 	});
 	return process;
 	// try {
@@ -274,8 +285,9 @@ export let parseCompilerLogOutput = (
 	let result: filesDiagnostics = {};
 	parsedDiagnostics.forEach((parsedDiagnostic) => {
 		let [fileAndLocation, ...diagnosticMessage] = parsedDiagnostic.content;
-		let locationSeparator = fileAndLocation.indexOf(":");
-		let file = fileAndLocation.substring(2, locationSeparator);
+		fileAndLocation = fileAndLocation.trim();
+		let locationSeparator = fileAndLocation.indexOf(":", 2);
+		let file = fileAndLocation.substring(0, locationSeparator);
 		let location = fileAndLocation.substring(locationSeparator + 1);
 		if (result[file] == null) {
 			result[file] = [];
